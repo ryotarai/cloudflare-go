@@ -22,6 +22,8 @@ var (
 	ErrMissingVideoID = errors.New("required video id missing")
 	// ErrMissingFilePath is for when FilePath is required but missing.
 	ErrMissingFilePath = errors.New("required file path missing")
+	// ErrMissingLiveInputID is for when LiveInputID is required but missing.
+	ErrMissingLiveInputID = errors.New("required live input id missing")
 )
 
 // StreamVideo represents a stream video.
@@ -202,6 +204,12 @@ type StreamAccessRule struct {
 	Country []string `json:"country,omitempty"`
 	Action  string   `json:"action"`
 	IP      []string `json:"ip,omitempty"`
+}
+
+// StreamLiveInputParameters are the basic parameters needed for a live input.
+type StreamLiveInputParameters struct {
+	AccountID   string
+	LiveInputID string
 }
 
 // StreamUploadFromURL send a video URL to it will be downloaded and made available on Stream.
@@ -441,4 +449,23 @@ func (api *API) StreamCreateSignedURL(ctx context.Context, params StreamSignedUR
 		return "", err
 	}
 	return streamSignedResponse.Result.Token, nil
+}
+
+// StreamDeleteLiveInput deletes a live input.
+//
+// API Reference: https://api.cloudflare.com/#stream-live-inputs-delete-a-live-input
+func (api *API) StreamDeleteLiveInput(ctx context.Context, options StreamLiveInputParameters) error {
+	if options.AccountID == "" {
+		return ErrMissingAccountID
+	}
+
+	if options.LiveInputID == "" {
+		return ErrMissingLiveInputID
+	}
+
+	uri := fmt.Sprintf("/accounts/%s/stream/live_inputs/%s", options.AccountID, options.LiveInputID)
+	if _, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil); err != nil {
+		return err
+	}
+	return nil
 }

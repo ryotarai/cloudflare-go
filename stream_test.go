@@ -71,7 +71,8 @@ const (
   }
 }
 `
-	testVideoID = "ea95132c15732412d22c1476fa83f27a"
+	testVideoID     = "ea95132c15732412d22c1476fa83f27a"
+	testLiveInputID = "9250fe485af9e3c83218f9b6a989e3ee"
 )
 
 var (
@@ -512,4 +513,36 @@ func TestStream_CreateSignedURL(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, want, out, "structs not equal")
 	}
+}
+
+func TestStream_DeleteLiveInput(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/accounts/"+testAccountID+"/stream/live_inputs/"+testLiveInputID, func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodDelete, r.Method, "Expected method 'DELETE', got %s", r.Method)
+		w.Header().Set("content-type", "application/json")
+		fmt.Fprint(w, `{
+			"success": true,
+			"errors": [],
+			"messages": [],
+			"result": {}
+		}`)
+	})
+
+	// Make sure AccountID is required
+	err := client.StreamDeleteLiveInput(context.Background(), StreamLiveInputParameters{})
+	if assert.Error(t, err) {
+		assert.Equal(t, ErrMissingAccountID, err)
+	}
+
+	// Make sure LiveInputID is required
+	err = client.StreamDeleteLiveInput(context.Background(), StreamLiveInputParameters{AccountID: testAccountID})
+	if assert.Error(t, err) {
+		assert.Equal(t, ErrMissingLiveInputID, err)
+	}
+
+	input := StreamLiveInputParameters{AccountID: testAccountID, LiveInputID: testLiveInputID}
+	err = client.StreamDeleteLiveInput(context.Background(), input)
+	require.NoError(t, err)
 }
